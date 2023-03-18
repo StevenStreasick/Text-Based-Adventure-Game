@@ -1,1 +1,2 @@
 # Text-Based-Adventure-Game
+A collaboration between four students to complete a text based adventure style game for a class. This project acted as a means to practice creating professional level documentation for a software, and to enlist common practices within the software development community. Some of the documentation included UML diagrams, NLRs, use case diagrams, and much more all bundled into three seperate project releases, demonstrating our progress at that point in time. 
