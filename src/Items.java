@@ -1,4 +1,3 @@
-import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 /**
@@ -40,8 +39,7 @@ public class Items{
      * @throws ClassNotFoundException
      */
     public static Object getItem(Class<?> classToInitialize) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, NoSuchMethodException, SecurityException, ClassNotFoundException {
-        Constructor<?> classConstructor = classToInitialize.getDeclaredConstructor();
-        return classConstructor.newInstance();
+        return classToInitialize.getDeclaredConstructor().newInstance();
     }
 
  /**

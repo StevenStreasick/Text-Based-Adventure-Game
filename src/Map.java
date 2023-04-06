@@ -1,4 +1,5 @@
 import java.util.Random;
+import java.security.InvalidParameterException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -6,11 +7,10 @@ import java.util.Arrays;
  * Acts as a map, storing all the rooms within a linked list, and the player's position on the map.
  */
 public class Map {
-    /**An arrayList of Room classes, which stores the order of rooms that are visited, with the tail 
-    being the current position.
-    */
-    /**NOTE: The size of the row will likely differ, as you travel down the column.*/
-    /**NOTE: The size of the columns will likely differ, as you travel down the row.*/ 
+    /**
+     *An arrayList of Room classes, which stores the order of rooms that are visited, with the tail 
+     *being the current position.
+     */
     private ArrayList<Room> map; 
 
     //The location where the player starts at
@@ -19,6 +19,10 @@ public class Map {
     //The current position of the player in regards to the map.
     private Room playerRoom;
 
+    /**
+     * Creates the intro level of the map.
+     * @return introLevel
+     */
     private introLevel createintroLevel() {
         int[] position = {0, 0};
         introLevel intro = new introLevel();
@@ -26,12 +30,21 @@ public class Map {
         return intro;
     }
 
+    /**
+     * Creates a new ArrayList object that contains the introLevel object.
+     * @return ArrayList<Room>
+     */
     private ArrayList<Room> createMap() {
         ArrayList<Room> tempMap = new ArrayList<Room>(); 
         tempMap.add(createintroLevel());
         return tempMap; 
     }
 
+    /**
+     * Returns the Room object at a given position on the map.
+     * @param position The position of the Room object to return.
+     * @return Room
+     */
     private Room getRoom(int position) {
         
         if (position < 0) {
@@ -44,28 +57,34 @@ public class Map {
         return map.get(position);
 
     }
-
+    
+    /**
+     * Creates the outro level of the map.
+     * @return Room
+     */
     private Room createOutroRoom() {
         return new outroLevel();
     }
 
-    private Room tryCreatingOutro(Player player) {
-        ArrayList<Item> inv = player.openInventory();
-
-        /**
-         * Determines if the player contains a 'quest item'. 
-         * Currently, the only quest item is the MysteriousAmulet
-         */
-        for (int i = 0; i < inv.size(); i++) {
-            Item item = inv.get(i);
-            if(QuestItem.class.isAssignableFrom(item.getClass())) {
-                return createOutroRoom();
-            }
+    /**
+     * Attempts to create the outro level of the map, if enough rooms have passed
+     * @return Room
+     */
+    private Room tryCreatingOutro() {
+        
+        if(getMapSize() > 3) {
+            return createOutroRoom();
         }
         
         return null;
     }
 
+    
+    /**
+     * Generates a new Room object at random.
+     * @return Room
+     * @throws Exception
+     */
     private Room generateNewRoom() throws Exception {
         Random ran = new Random();
         int roomToGenerate = ran.nextInt(Rooms.length());
@@ -77,7 +96,59 @@ public class Map {
         }
     }
 
+    /**
+     * Moves the player to the next room. Will generate the next room if the room does not already exist
+     * @param currentRoom
+     * @param direction
+     * @return Room
+     * @throws Exception
+     */
+    private Room moveRooms(char direction) throws Exception {
+        
+        int[] oldPosition = playerRoom.getRoomPosition();
+        /**Creates a hard copy of oldPosition */
+        int[] position = {oldPosition[0], oldPosition[1]};
 
+        switch (direction) {
+         case 'n':
+            position[1] -= 1;
+            break;
+         case 'e':
+            position[0] += 1;
+            break;
+         case 's':
+            position[1] += 1;
+            break;
+         case 'w':
+            position[0] -= 1;
+            break;
+         default:
+            throw new InvalidParameterException();
+        }
+        
+        if(hasVisitedPosition(position)) {
+            throw new Exception("Room has already been visited");
+        }
+
+        Room room = tryCreatingOutro();
+        if (room == null) {
+            room = generateNewRoom();
+        }
+
+        room.setPlayerPosition(direction);
+        room.setRoomPosition(position);
+        map.add(room);
+        playerRoom = room;
+        
+        return getPlayerRoom();
+    }
+
+
+    /**
+     * Checks if a given position on the map has already been visited.
+     * @param position The position to check.
+     * @return boolean
+     */
     private boolean hasVisitedPosition(int[] position) {
         for (int i = 0; i < getMapSize(); i++) {
             if(Arrays.equals(getRoom(i).getRoomPosition(), position)) {
@@ -102,79 +173,37 @@ public class Map {
     }
     
     /**
-     * Returns the map object.
+     * Returns the ArrayList object containing all the Room objects.
      * @return ArrayList<ArrayList<Room>>
      */
     public ArrayList<Room> getMap() {
         return map;
     }
 
-
-     /**
-     * Moves the player to the exit.
-     * @return Room
-     */
-    public Room moveRooms() {
-        boolean debounce = false;
-
-        if (debounce) {
-            return null;
-        }
-
-        Room outro = createOutroRoom();
-        map.add(outro);
-        playerRoom = outro;
-        return outro;
-    }
-
+    
     /**
-     * Moves the player to the next room. Will generate the next room if the room does not already exist
-     * @param currentRoom
-     * @param direction
-     * @return Room
+     * Moves the player in the direction. 
+     * If the player is no longer able to explore the room in that direction, 
+     * it will generate the next room for the player to explore. 
+     * @param d
      * @throws Exception
      */
-    public Room moveRooms(char direction, Player player) throws Exception {
+    public void move(char d) throws Exception {
+        if(!(
+                d == 'n' ||
+                d == 'e' || 
+                d == 's' || 
+                d == 'w')) 
+            return;
         
-        int[] oldPosition = playerRoom.getRoomPosition();
-        /**Creates a hard copy of oldPosition */
-        int[] position = {oldPosition[0], oldPosition[1]};
-
-        switch (direction) {
-         case 'n':
-            position[1] -= 1;
-            break;
-         case 'e':
-            position[0] += 1;
-            break;
-         case 's':
-            position[1] += 1;
-            break;
-         case 'w':
-            position[0] -= 1;
-            break;
-        default:
-            throw new Exception("Invalid parameters passed");
+        try {
+            playerRoom.movePlayer(d);
+        } catch (IndexOutOfBoundsException e) {
+            moveRooms(d);
+            throw e;
         }
-        
-        if(hasVisitedPosition(position)) {
-            throw new Exception("Room has already been visited");
-            
-        }
-
-        Room room = tryCreatingOutro(player);
-        if (room == null) {
-            room = generateNewRoom();
-        }
-
-        room.setPlayerPosition(direction);
-        room.setRoomPosition(position);
-        map.add(room);
-        playerRoom = room;
-        
-        
-        return getPlayerRoom();
     }
+    
 
     /**
      * Returns the current player's room.
